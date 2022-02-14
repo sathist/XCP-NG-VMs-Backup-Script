@@ -1,0 +1,8 @@
+[Unit]
+Description=Server-VM Backups
+
+[Service]
+ExecStart=/usr/bin/python3 /{path}/xcp-ng-server-backup.py
+
+[Install]
+WantedBy=multi-user.target
