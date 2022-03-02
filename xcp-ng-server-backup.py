@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import logging
 
+print("\n XCP-NG Xenserver Backup Automation Script")
 logging.basicConfig(filename="/var/log/xenserverbkp/xenserver-backuper.log", format='%(asctime)s %(message)s')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
