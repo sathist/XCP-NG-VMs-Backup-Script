@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import logging
 
-logging.basicConfig(filename="/var/log/xenserverbkp/xenserver-backuper.log", format='%(asctime)s %(message)s', filemode='w')
+logging.basicConfig(filename="/var/log/xenserverbkp/xenserver-backuper.log", format='%(asctime)s %(message)s')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
