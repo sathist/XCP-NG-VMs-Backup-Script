@@ -3,10 +3,20 @@ import os
 from datetime import datetime
 import logging
 
-print("\n XCP-NG Xenserver Backup Automation Script")
-logging.basicConfig(filename="/var/log/xenserverbkp/xenserver-backuper.log", format='%(asctime)s %(message)s')
+import smtplib, ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+import pandas as pd
+
+logging.basicConfig(filename="/var/log/xenserverbkp/xenserver-backuper.log", format='%(asctime)s %(message)s', filemode='w')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+
+server_name = sp.getoutput('hostname')
+from_id = 'networksecurityalerts@contus.in'
+mail_password = 'uiygfkoyamvffjyo'
+to_mail_id = 'sathish.t@contus.in','vignesh.n@contus.in'
 
 try:
     sp.getoutput(
@@ -44,9 +54,9 @@ try:
         logger.info(snap_details)
         print(snap_details)
         print("\n Creating backup directories with current date on the path /mnt/nas")
-        sp.getoutput('mkdir -p /mnt/'+ start_time)
+        sp.getoutput('mkdir -p /mnt/nas/'+ start_time)
         print("\n Exporting Snapshot to backup directory /mnt/nas:" + hostname[i]+" - snapshot ID: "+snapid)
-        exportsnap = sp.getoutput('xe snapshot-export-to-template snapshot-uuid=' + snapid+' filename=/mnt/'+start_time+'/'+hostname[i]+'-'+start_time+'.xva')
+        exportsnap = sp.getoutput('xe snapshot-export-to-template snapshot-uuid=' + snapid+' filename=/mnt/nas/'+start_time+'/'+hostname[i]+'-'+start_time+'.xva')
         logger.info(exportsnap)
         print("\n Export Snapshot completed for "+hostname[i])
         print("\n Removing Unnecassary Snapshot "+hostname[i])
@@ -59,7 +69,7 @@ try:
         logger.info(snap_remove)
 
     sp.getoutput('systemctl stop xenserverbkp.service')
-    rm_old_dir = sp.getoutput('find /mnt/ -mtime +14 -type d')
+    rm_old_dir = sp.getoutput('find /mnt/nas/ -mtime +14 -type d')
     logger.info(rm_old_dir)
     sp.getouput('rm -rf rm_old_dir')
 
@@ -67,3 +77,62 @@ except IOError:
     print("\n Cannot continue further ERROR:Check your script!\n")
     error = ("\n Cannot continue further ERROR:Check your script!\n")
     logger.error(error)
+
+
+
+    html = '''
+        <html>
+            <body>
+                <h3>All VM's backups done - Success </h3>
+
+            </body>
+        </html>
+        '''
+
+    email_from = from_id
+    password = mail_password
+    email_to = to_mail_id
+    serviceStatus = '\U0001f7e2' + server_name + ' Backup success ' 
+
+except IOError:
+    print("\n Cannot continue further ERROR:Check your script!\n")
+    error = ("\n Cannot continue further ERROR:Check your script!\n")
+    logger.error(error)
+
+    html = '''
+        <html>
+            <body>
+                <h3>Cannot continue further ERROR:Check your script &  VM's are NOT backedup </h3>
+            </body>
+        </html>
+        '''
+
+    email_from = from_id
+    password = mail_password
+    email_to = to_mail_id
+    serviceStatus = '\U0001f534' + server_name + ' Backup failed '
+
+# Mail config
+try:
+    # Generate today's date to be included in the email Subject
+    date_str = pd.Timestamp.today().strftime('%Y-%m-%d')
+
+    # Create a MIMEMultipart class, and set up the From, To, Subject fields
+    email_message = MIMEMultipart()
+    email_message['From'] = email_from
+    email_message['To'] = ", ".join(email_to)
+    email_message['Subject'] = f'{serviceStatus} - Mirrorfly Xenserver - {date_str} - Log'
+
+    # Attach the html doc defined earlier, as a MIMEText html content type to the MIME message
+    email_message.attach(MIMEText(html, "html"))
+
+    # Convert it as a string
+    email_string = email_message.as_string()
+
+    # Connect to the Gmail SMTP server and Send Email
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+        server.login(email_from, password)
+        server.sendmail(email_from, email_to, email_string)
+except Exception as e: 
+    print('Run time Error' + e)
