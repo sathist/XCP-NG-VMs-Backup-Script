@@ -128,7 +128,7 @@ try:
 
     # Convert it as a string
     email_string = email_message.as_string()
-    #test
+    
     # Connect to the Gmail SMTP server and Send Email
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
